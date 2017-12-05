@@ -48,7 +48,7 @@ void check_auth(const char *auth, const char *right)
                         }
                 }
                 fprintf(stderr, "Invalid authorization key text.");
-                os_log(OS_LOG_DEFAULT, "Invalid authorization key test.");
+                os_log(OS_LOG_DEFAULT, "Invalid authorization key text.");
                 exit(1);
         }
 
