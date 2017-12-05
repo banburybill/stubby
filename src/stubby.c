@@ -142,7 +142,8 @@ print_usage(FILE *out, const char *progname)
 	fprintf(out, "\t-g\tRun stubby in background (default is foreground)\n");
 #endif
 	fprintf(out, "\t-h\tPrint this help\n");
-	fprintf(out, "\t-i\tValidate and print the configuration only. Useful to validate config file contents.\n");
+	fprintf(out, "\t-i\tValidate and print the configuration only. Useful to validate config file\n");
+	fprintf(out, "\t\t\tcontents. Note: does not attempt to bind to the listen addresses.\n");
 	fprintf(out, "\t-l\tEnable logging of all logs (same as -v 7)\n");
 	fprintf(out, "\t-v\tSpecify logging level (overrides -l option). Values are\n");
 	fprintf(out, "\t\t\t0: EMERG  - %s\n", GETDNS_LOG_EMERG_TEXT);
@@ -266,7 +267,8 @@ static getdns_return_t parse_config_file(const char *fn)
 	}
 	config_file[read_sz] = 0;
 	fclose(fh);
-	r = parse_config(config_file, strstr(fn, ".yml") != NULL);
+	r = parse_config(config_file, strstr(fn, ".yml") != NULL
+	                           || strstr(fn, ".yaml") != NULL);
 	free(config_file);
 	if (r == GETDNS_RETURN_GOOD)
 		stubby_local_log(NULL,GETDNS_LOG_UPSTREAM_STATS, GETDNS_LOG_DEBUG,
@@ -383,7 +385,7 @@ static void request_cb(
 
 	if (callback_type != GETDNS_CALLBACK_COMPLETE)
 		SERVFAIL("Callback type not complete",
-		    callback_type, msg, &response);
+		    (int)callback_type, msg, &response);
 
 	else if (!response)
 		SERVFAIL("Missing response", 0, msg, &response);
@@ -749,10 +751,7 @@ main(int argc, char **argv)
 		                 "stub resolution only: %s\n", _getdns_strerror(r));
 		exit(EXIT_FAILURE);
 	}
-	if (listen_count && (r = getdns_context_set_listen_addresses(
-	    context, listen_list, NULL, incoming_request_handler)))
-		perror("error: Could not bind on given addresses");
-	else if (print_api_info) {
+	if (print_api_info) {
 		getdns_dict *api_information = 
 		    getdns_context_get_api_information(context);
 		char *api_information_str;
@@ -777,7 +776,10 @@ main(int argc, char **argv)
 		fprintf(stdout, "%s\n", api_information_str);
 		free(api_information_str);
 		getdns_dict_destroy(api_information);
-	}
+		fprintf(stderr, "Result: Config file syntax is valid.\n");
+	} else if (listen_count && (r = getdns_context_set_listen_addresses(
+	    context, listen_list, NULL, incoming_request_handler)))
+		perror("error: Could not bind on given addresses");
 	else
 #if !defined(STUBBY_ON_WINDOWS) && !defined(GETDNS_ON_WINDOWS)
 	     if (!run_in_foreground) {
@@ -820,13 +822,20 @@ main(int argc, char **argv)
 				        strerror(errno));
 				exit(EXIT_FAILURE);
 			}
-		} else
+		} else {
+#ifdef SIGPIPE
+			(void)signal(SIGPIPE, SIG_IGN);
+#endif
 			getdns_context_run(context);
+		}
 	} else
 #endif
 	{
 		stubby_local_log(NULL,GETDNS_LOG_UPSTREAM_STATS, GETDNS_LOG_DEBUG,
 			       "Starting DAEMON....\n");
+#ifdef SIGPIPE
+		(void)signal(SIGPIPE, SIG_IGN);
+#endif
 		getdns_context_run(context);
 	}
 
