@@ -70,8 +70,24 @@ if (DEFINED CMAKE_INSTALL_FULL_RUNSTATEDIR)
 else ()
   set(RUNSTATEDIR "${CMAKE_INSTALL_FULL_LOCALSTATEDIR}/run")
 endif ()
+install(
+  DIRECTORY
+  DESTINATION ${RUNSTATEDIR}
+  DIRECTORY_PERMISSIONS
+  OWNER_READ OWNER_WRITE OWNER_EXECUTE
+  GROUP_READ GROUP_EXECUTE
+  WORLD_READ WORLD_EXECUTE
+  )
 
 set(STUBBYCONFDIR "${CMAKE_INSTALL_FULL_SYSCONFDIR}/stubby")
+install(
+  DIRECTORY
+  DESTINATION ${STUBBYCONFDIR}
+  DIRECTORY_PERMISSIONS
+  OWNER_READ OWNER_WRITE OWNER_EXECUTE
+  GROUP_READ GROUP_EXECUTE
+  WORLD_READ WORLD_EXECUTE
+  )
 
 # Platform
 if (WIN32 OR MINGW OR MSYS OR CYGWIN)
@@ -82,6 +98,23 @@ elseif (APPLE)
 elseif (UNIX)
   set(ON_UNIX 1)
 endif ()
+
+# Config file
+if (DEFINED ON_WINDOWS)
+  set(CONFIG_FILE "stubby.yml.windows")
+  # TODO: Generate stubby.yml.windows.
+else ()
+  set(CONFIG_FILE "stubby.yml.example")
+endif()
+
+install(FILES stubby.yml.example
+  DESTINATION ${CMAKE_INSTALL_FULL_DATADIR}
+  )
+install(CODE "
+  if (NOT EXISTS \"${STUBBYCONFDIR}/stubby.yml\")
+    file(INSTALL \"${CONFIG_FILE}\" DESTINATION \"${STUBBYCONFDIR}/stubby.yml\")
+  endif ()"
+  )
 
 # Main executable
 
@@ -107,6 +140,10 @@ target_link_libraries(stubby
   PRIVATE ${LIBYAML_LIBRARIES}
   )
 
+install(TARGETS stubby
+  DESTINATION ${CMAKE_INSTALL_FULL_BINDIR}
+  )
+
 if (DEFINED ON_MACOS)
   find_library(SECURITY Security)
   if (NOT SECURITY)
@@ -118,6 +155,10 @@ if (DEFINED ON_MACOS)
     )
 
   target_link_libraries(stubby-ui-helper ${SECURITY})
+
+  install(PROGRAMS macos/stubby-setdns-macos.sh
+    DESTINATION ${CMAKE_INSTALL_FULL_SBINDIR}
+    )
 endif()
 
 configure_file(${CMAKE_SOURCE_DIR}/cmake/include/cmakeconfig.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
