@@ -107,4 +107,17 @@ target_link_libraries(stubby
   PRIVATE ${LIBYAML_LIBRARIES}
   )
 
+if (DEFINED ON_MACOS)
+  find_library(SECURITY Security)
+  if (NOT SECURITY)
+    message(FATAL_ERROR "Security framework not found.")
+  endif ()
+
+  add_executable(stubby-ui-helper
+    macos/stubby-ui-helper.c
+    )
+
+  target_link_libraries(stubby-ui-helper ${SECURITY})
+endif()
+
 configure_file(${CMAKE_SOURCE_DIR}/cmake/include/cmakeconfig.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
