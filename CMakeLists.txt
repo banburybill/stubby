@@ -22,12 +22,19 @@ include(CheckIncludeFile)
 
 project(stubby VERSION ${PACKAGE_VERSION})
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 find_package(PkgConfig)
 
-pkg_check_modules(LIBGETDNS REQUIRED getdns>=1.2.0)
 pkg_check_modules(LIBYAML yaml-0.1>=0.1.6)
+
+if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/getdns/CMakeLists.txt")
+  add_subdirectory(getdns)
+  set(LIBGETDNS_LIBRARIES getdns)
+  message(STATUS "Using GetDNS library from sub-project.")
+else()
+  pkg_check_modules(LIBGETDNS REQUIRED getdns>=1.2.0)
+endif()
 
 check_library_exists(getdns getdns_yaml2dict "${LIBGETDNS_LIBRARY_DIRS}" HAVE_GETDNS_YAML2DICT)
 if (NOT HAVE_GETDNS_YAML2DICT)
@@ -49,14 +56,14 @@ check_include_file(os/log.h HAVE_OS_LOG_H)
 
 # Does the compiler accept the "format" attribute?
 try_compile(HAVE_ATTR_FORMAT
-  ${CMAKE_BINARY_DIR}
-  ${CMAKE_SOURCE_DIR}/cmake/tests/test_format_attr.c
+  ${CMAKE_CURRENT_BINARY_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/tests/test_format_attr.c
   )
 
 # Does the compiler accept the "unused" attribute?
 try_compile(HAVE_ATTR_UNUSED
-  ${CMAKE_BINARY_DIR}
-  ${CMAKE_SOURCE_DIR}/cmake/tests/test_unused_attr.c
+  ${CMAKE_CURRENT_BINARY_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/tests/test_unused_attr.c
   )
 
 include_directories(
@@ -162,4 +169,4 @@ if (DEFINED ON_MACOS)
     )
 endif()
 
-configure_file(${CMAKE_SOURCE_DIR}/cmake/include/cmakeconfig.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/include/cmakeconfig.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
