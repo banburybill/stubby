@@ -17,10 +17,10 @@ set(PACKAGE_BUGREPORT "sara@sinodun.com")
 set(PACKAGE_STRING "${PACKAGE_NAME} ${PACKAGE_VERSION}")
 set(PACKAGE_TARNAME "${PACKAGE}-${PACKAGE_VERSION}")
 
-include (CheckLibraryExists)
+include(CheckLibraryExists)
 include(CheckIncludeFile)
 
-project(stubby VERSION 0.2.1)
+project(stubby VERSION ${PACKAGE_VERSION})
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 
@@ -52,6 +52,7 @@ try_compile(HAVE_ATTR_FORMAT
   ${CMAKE_BINARY_DIR}
   ${CMAKE_SOURCE_DIR}/cmake/tests/test_format_attr.c
   )
+
 # Does the compiler accept the "unused" attribute?
 try_compile(HAVE_ATTR_UNUSED
   ${CMAKE_BINARY_DIR}
